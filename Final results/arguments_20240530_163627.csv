@@ -1,0 +1,17 @@
+Argument,Value
+outputfolder,./Final results
+folder_path_loads,./Final loads
+case_study_file,./Buildings and scenarios/CS1.csv
+scenario_file,./Buildings and scenarios/Scenario1.csv
+nr_steps,672
+time_interval,15
+dqn_episodes,800
+dqn_batch_size,64
+dqn_evaluation_steps,200
+learning_rate,0.0001
+memory_size,2688
+num_layers,4
+layers_size,64
+epsilon_d,0.995
+gamma,1.0
+n_trials,100

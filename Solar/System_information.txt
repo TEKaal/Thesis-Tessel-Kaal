@@ -1,0 +1,7 @@
+*PV plant specifications*
+Installation type: rooftop PV system
+PV module type: 8 x Trina Full Black 385 Wp (3.08 kWp)
+Inverter: Central Inverter from Solar Edge 3000H
+Location: Amstelveen, the Netherlands. Approximated coordinates: 52.3, 4.9
+PV array orientation: North West (see picture)
+PV array inclination: 45 degrees
