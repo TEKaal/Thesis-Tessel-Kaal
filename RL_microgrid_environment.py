@@ -181,11 +181,15 @@ def create_microgrid(Energy_consumption, combined_df, df_buildings, steps=35040)
     total_base_electrical_load = 0
     total_energy_output = 0
 
+    # If `combined_df` is the DataFrame and you want to fill NaNs for the column 'TNO_grond_opp_m2'
+    df_buildings['TNO_grond_opp_m2'].fillna(0, inplace=True)
+
     # Iterating over DataFrame rows properly
     for index, row in df_buildings.iterrows():
-        # Assuming 'data' is a DataFrame
-        data['TNO_grond_opp_m2'].fillna(0, inplace=True)
-        amount_squaremeters = data['TNO_grond_opp_m2']
+        # Directly access the column value in the row, which is now guaranteed not to be NaN
+        amount_squaremeters = row['TNO_grond_opp_m2']
+        # Do something with amount_squaremeters if needed
+        print(amount_squaremeters)
 
         # Calculate base electrical load for current row
         base_electrical_load_gjoule = Epot * amount_squaremeters
