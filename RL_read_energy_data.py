@@ -31,7 +31,7 @@ def process_energy_consumption_files(folder_path, building_list, timeinterval):
 
 def load_buildings_from_file(casestudy_file_name):
     # Load the specified columns from the file
-    df = pd.read_csv(casestudy_file_name, usecols=['TARGET_FID_12_13', 'identificatie', 'POINT_X', 'POINT_Y', 'TNO_p_dak_horizontaal', 'TNO_dakopp_m2', 'BAG_aantal_verblijfsobjecten', 'BAG_oppervlakte'])
+    df = pd.read_csv(casestudy_file_name, usecols=['TARGET_FID_12_13', 'identificatie', 'POINT_X', 'POINT_Y', 'TNO_p_dak_horizontaal', 'TNO_dakopp_m2', 'BAG_aantal_verblijfsobjecten', 'TNO_grond_opp_m2'])
 
     # Extract columns
     ids = df['TARGET_FID_12_13'].astype(int)  # Convert TARGET_FID_12_13 to integers

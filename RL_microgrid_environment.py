@@ -47,7 +47,7 @@ def calculate_wind_power(wind_speeds, radius, power_coefficient, air_density=1.2
 
     return power_kilowattshour
 
-def adjust_load_profile(load_profile, timesteps, factor=0.3):
+def adjust_load_profile(load_profile, timesteps, factor=1):
     # Convert load profile to a NumPy array if it's not already one
     if not isinstance(load_profile, np.ndarray):
         load_profile = np.array(load_profile)
@@ -175,7 +175,7 @@ def create_microgrid(Energy_consumption, combined_df, df_buildings, steps=35040)
     # Ensure that Epot and heat_pump_cop are defined
     Epot = grid_info['Geo_potent']
     print(Epot)# Example value, define as per actual data or requirements
-    heat_pump_cop = 3.5  # Example coefficient of performance
+    heat_pump_cop = 2.5  # Example coefficient of performance
 
     # Initialize total variables
     total_base_electrical_load = 0
@@ -183,9 +183,9 @@ def create_microgrid(Energy_consumption, combined_df, df_buildings, steps=35040)
 
     # Iterating over DataFrame rows properly
     for index, row in df_buildings.iterrows():
-        # Access the number of residential units or another relevant property
-        residential_units = row["BAG_aantal_verblijfsobjecten"]
-        amount_squaremeters = row["BAG_oppervlakte"]
+        # Assuming 'data' is a DataFrame
+        data['TNO_grond_opp_m2'].fillna(0, inplace=True)
+        amount_squaremeters = data['TNO_grond_opp_m2']
 
         # Calculate base electrical load for current row
         base_electrical_load_gjoule = Epot * amount_squaremeters
@@ -209,7 +209,7 @@ def create_microgrid(Energy_consumption, combined_df, df_buildings, steps=35040)
     total_heat_pump = GensetModule(
         running_min_production=0,  # Assuming no minimum production specified
         running_max_production=total_energy_output*0.1,
-        genset_cost=0.5/heat_pump_cop,  #standard is 0.4 divided by 4
+        genset_cost=0.5,  #standard is 0.4 divided by 4
         co2_per_unit=0.0,
         cost_per_unit_co2=0.0,
         start_up_time=2,
