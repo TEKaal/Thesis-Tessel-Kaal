@@ -7,7 +7,7 @@ from RL_read_energy_data import *
 from RL_connection_matrix import *
 from RL_custom_Env import *
 import csv
-# from pymgrid.microgrid.trajectory.stochastic import FixedLengthStochasticTrajectory
+from pymgrid.microgrid.trajectory.stochastic import FixedLengthStochasticTrajectory
 from Cluster_algorithm import *
 import optuna
 import optuna.visualization as vis
@@ -91,8 +91,10 @@ def main(args):
     microgrid_env = CustomMicrogridEnv.from_microgrid(microgrid)
 
     # microgrid_env = CustomMicrogridEnv.from_scenario(microgrid_number=10)
-    # microgrid_env.trajectory_func = FixedLengthStochasticTrajectory(args.nr_steps)
+    microgrid_env.trajectory_func = FixedLengthStochasticTrajectory(args.nr_steps)
+
     print("Initialising trajectory")
+
     microgrid_env.initial_step = 0
     microgrid_env.final_step = 26280
 
@@ -114,7 +116,7 @@ if __name__ == "__main__":
     folder_path_loads = "Final loads"
     case_study_file = "Buildings and scenarios/CS1.csv"
     scenario_file = "Buildings and scenarios/Scenario1.csv"
-    output_file = r"C:\Users\tessel.kaal\OneDrive - Accenture\\Thesis\\Output training model\\VERSION 4"
+    output_file = r"C:\Users\tessel.kaal\OneDrive - Accenture\Thesis\Output training model\VERSION 4"
 
     parser.add_argument('--outputfolder', type=str, default=output_file, help='Folder to save output files.')
     parser.add_argument('--folder_path_loads', type=str, default=folder_path_loads, help='Path to the folder containing load files.')
@@ -122,10 +124,10 @@ if __name__ == "__main__":
     parser.add_argument('--scenario_file', type=str, default=scenario_file, help='Path to the scenario file.')
     parser.add_argument('--nr_steps', type=int, default=96, help='Number of steps for the simulation.')
     parser.add_argument('--time_interval', type=int, default=15, help='Time interval in minutes.')
-    parser.add_argument('--dqn_episodes', type=int, default=400, help='Number of episodes for DQN training.')
+    parser.add_argument('--dqn_episodes', type=int, default=200, help='Number of episodes for DQN training.')
     parser.add_argument('--dqn_batch_size', type=int, default=64, help='Batch size for DQN training.')
-    parser.add_argument('--dqn_evaluation_steps', type=int, default=400, help='Number of evaluation steps for DQN.')
-    parser.add_argument('--learning_rate', type=float, default=0.00001, help='Learning rate for DQN.')
+    parser.add_argument('--dqn_evaluation_steps', type=int, default=100, help='Number of evaluation steps for DQN.')
+    parser.add_argument('--learning_rate', type=float, default=0.001, help='Learning rate for DQN.')
     parser.add_argument('--memory_size', type=int, default=96*4, help='Memory allocation.')
     parser.add_argument('--num_layers', type=int, default=4, help='Neural network')
     parser.add_argument('--layers_size', type=int, default=64, help='Neural layer size')

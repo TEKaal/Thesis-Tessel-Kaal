@@ -130,11 +130,11 @@ def create_microgrid(Energy_consumption, combined_df, df_buildings, steps=35040)
     solar_data_array = solar_data(timesteps, steps)
     # Convert the column to numeric, coercing errors to NaN
     df_buildings["TNO_dakopp_m2"] = pd.to_numeric(df_buildings["TNO_dakopp_m2"], errors='coerce')
-    roof_partition = df_buildings["TNO_dakopp_m2"].sum() * 0.6
+    roof_partition = df_buildings["TNO_dakopp_m2"].sum() * 0.4
     # Print the calculated sum
     print("Horizontal roof partition calculated:", roof_partition)
     # problem is not all buildings have this
-    efficiency_pv = 0.9
+    efficiency_pv = 0.7
     solar_energy = roof_partition * solar_data_array * 0.25 * efficiency_pv
 
     RES.append((solar_energy[(steps // 52 )* 2 :(steps // 52 )* 3]))
@@ -212,7 +212,7 @@ def create_microgrid(Energy_consumption, combined_df, df_buildings, steps=35040)
     # Create a single GensetModule instance with the total calculated values
     total_heat_pump = GensetModule(
         running_min_production=0,  # Assuming no minimum production specified
-        running_max_production=total_energy_output*0.1,
+        running_max_production=total_energy_output*0.05,
         genset_cost=0.5,  #standard is 0.4 divided by 4
         co2_per_unit=0.0,
         cost_per_unit_co2=0.0,
