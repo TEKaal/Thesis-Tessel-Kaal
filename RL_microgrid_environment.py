@@ -47,7 +47,7 @@ def calculate_wind_power(wind_speeds, radius, power_coefficient, air_density=1.2
 
     return power_kilowattshour
 
-def adjust_load_profile(load_profile, timesteps, factor=1):
+def adjust_load_profile(load_profile, timesteps, factor=0.8):
     # Convert load profile to a NumPy array if it's not already one
     if not isinstance(load_profile, np.ndarray):
         load_profile = np.array(load_profile)
@@ -130,16 +130,16 @@ def create_microgrid(Energy_consumption, combined_df, df_buildings, steps=35040)
     solar_data_array = solar_data(timesteps, steps)
     # Convert the column to numeric, coercing errors to NaN
     df_buildings["TNO_dakopp_m2"] = pd.to_numeric(df_buildings["TNO_dakopp_m2"], errors='coerce')
-    roof_partition = df_buildings["TNO_dakopp_m2"].sum() * 0.4
+    roof_partition = df_buildings["TNO_dakopp_m2"].sum() * 0.6
     # Print the calculated sum
     print("Horizontal roof partition calculated:", roof_partition)
     # problem is not all buildings have this
-    efficiency_pv = 0.7
-    solar_energy = roof_partition * solar_data_array * 0.25 * efficiency_pv
+    efficiency_pv = 0.9
+    solar_energy = roof_partition * solar_data_array * efficiency_pv
 
     RES.append((solar_energy[(steps // 52 )* 2 :(steps // 52 )* 3]))
 
-    solar_energy = RenewableModule(time_series=(solar_energy))
+    solar_energy = RenewableModule(time_series=(50*solar_energy))
     solar_energy.set_forecaster(forecaster="oracle",
                                              forecast_horizon=horizon,
                                              forecaster_increase_uncertainty=False,
@@ -157,7 +157,7 @@ def create_microgrid(Energy_consumption, combined_df, df_buildings, steps=35040)
         wind_data_array = calculate_wind_power(wind_speed_array, row["Radius_WT"], row["Power_coef"])
 
         # Create a RenewableModule instance for each turbine
-        wind_module = RenewableModule(time_series=(wind_data_array))
+        wind_module = RenewableModule(time_series=(50*wind_data_array))
 
         # Configure the forecaster settings for the module
         wind_module.set_forecaster(
@@ -175,7 +175,7 @@ def create_microgrid(Energy_consumption, combined_df, df_buildings, steps=35040)
     # Ensure that Epot and heat_pump_cop are defined
     Epot = grid_info['Geo_potent']
     print(Epot)# Example value, define as per actual data or requirements
-    heat_pump_cop = 2.5  # Example coefficient of performance
+    heat_pump_cop = 4.5  # Example coefficient of performance
 
     # Initialize total variables
     total_base_electrical_load = 0
@@ -188,6 +188,8 @@ def create_microgrid(Energy_consumption, combined_df, df_buildings, steps=35040)
     for index, row in df_buildings.iterrows():
         # Directly access the column value in the row, which is now guaranteed not to be NaN
         amount_squaremeters = row['TNO_grond_opp_m2']
+        residential_homes = row['BAG_aantal_verblijfsobjecten']
+
         # Do something with amount_squaremeters if needed
         print(amount_squaremeters)
 
@@ -198,10 +200,19 @@ def create_microgrid(Energy_consumption, combined_df, df_buildings, steps=35040)
         gj_to_kWh = 277.778
 
         # Calculate the kWh for the given joules
-        base_electrical_load = base_electrical_load_gjoule * gj_to_kWh * 4
+        base_electrical_load = base_electrical_load_gjoule * gj_to_kWh * 0.25
 
         # Calculate total energy output for current row
         energy_output = base_electrical_load * heat_pump_cop
+        print(energy_output)
+
+        # limit energy output with amount of residential homes * 20kW
+        max_energy_output = residential_homes * 20 * heat_pump_cop * 0.25# Convert 20 kW to watts
+        print("residential homes", residential_homes)
+        print("max energy output", max_energy_output)
+
+        if energy_output > max_energy_output:
+            energy_output = max_energy_output
 
         # Accumulate the totals
         total_base_electrical_load += base_electrical_load
@@ -212,7 +223,7 @@ def create_microgrid(Energy_consumption, combined_df, df_buildings, steps=35040)
     # Create a single GensetModule instance with the total calculated values
     total_heat_pump = GensetModule(
         running_min_production=0,  # Assuming no minimum production specified
-        running_max_production=total_energy_output*0.05,
+        running_max_production=(total_energy_output*0.8)*1.5, #effiency,
         genset_cost=0.5,  #standard is 0.4 divided by 4
         co2_per_unit=0.0,
         cost_per_unit_co2=0.0,
@@ -256,7 +267,8 @@ def create_microgrid(Energy_consumption, combined_df, df_buildings, steps=35040)
                ('solar_energy', solar_energy)
                ]
 
-    combined_modules = modules + list(load_modules.values()) + list(battery_modules.values()) + list(wind_modules.values())
+    combined_modules = (modules + list(load_modules.values()) + list(battery_modules.values())
+                        + list(wind_modules.values()))
     microgrid = Microgrid(combined_modules)
 
     # print all input data

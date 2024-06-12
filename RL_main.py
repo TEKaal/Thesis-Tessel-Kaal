@@ -116,7 +116,7 @@ if __name__ == "__main__":
     folder_path_loads = "Final loads"
     case_study_file = "Buildings and scenarios/CS1.csv"
     scenario_file = "Buildings and scenarios/Scenario1.csv"
-    output_file = r"C:\Users\tessel.kaal\OneDrive - Accenture\Thesis\Output training model\VERSION 4"
+    output_file = r"C:\Users\tessel.kaal\OneDrive - Accenture\Thesis\Output training model\VERSION 5\\VERSION 5.1"
 
     parser.add_argument('--outputfolder', type=str, default=output_file, help='Folder to save output files.')
     parser.add_argument('--folder_path_loads', type=str, default=folder_path_loads, help='Path to the folder containing load files.')
@@ -124,14 +124,14 @@ if __name__ == "__main__":
     parser.add_argument('--scenario_file', type=str, default=scenario_file, help='Path to the scenario file.')
     parser.add_argument('--nr_steps', type=int, default=96, help='Number of steps for the simulation.')
     parser.add_argument('--time_interval', type=int, default=15, help='Time interval in minutes.')
-    parser.add_argument('--dqn_episodes', type=int, default=200, help='Number of episodes for DQN training.')
+    parser.add_argument('--dqn_episodes', type=int, default=400, help='Number of episodes for DQN training.')
     parser.add_argument('--dqn_batch_size', type=int, default=64, help='Batch size for DQN training.')
-    parser.add_argument('--dqn_evaluation_steps', type=int, default=100, help='Number of evaluation steps for DQN.')
-    parser.add_argument('--learning_rate', type=float, default=0.001, help='Learning rate for DQN.')
+    parser.add_argument('--dqn_evaluation_steps', type=int, default=200, help='Number of evaluation steps for DQN.')
+    parser.add_argument('--learning_rate', type=float, default=0.0001, help='Learning rate for DQN.')
     parser.add_argument('--memory_size', type=int, default=96*4, help='Memory allocation.')
     parser.add_argument('--num_layers', type=int, default=4, help='Neural network')
     parser.add_argument('--layers_size', type=int, default=64, help='Neural layer size')
-    parser.add_argument('--epsilon_d', type=float, default=0.995, help='Memory allocation.')
+    parser.add_argument('--epsilon_d', type=float, default=0.999, help='Memory allocation.')
     parser.add_argument('--gamma', type=float, default=1, help='Memory allocation.')
     parser.add_argument('--n_trials', type=int, default=100, help='Number of trials for Optuna optimization.')
 
