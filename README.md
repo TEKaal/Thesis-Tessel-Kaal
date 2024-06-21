@@ -29,6 +29,11 @@ Install the required dependencies using the provided requirements.txt file:
 pip install -r requirements.txt
 ```
 
+Then install Pymgrid, but with 
+'''bash
+$ pip install pymgrid[genset_mpc]
+''''
+
 #Usage
 Detailed explanations for each script and module are provided within the respective files. 
 
