@@ -14,7 +14,7 @@ Clone the repository to your local machine:
 
 ```bash
 git clone https://github.com/TEKaal/Thesis-Tessel-Kaal.git
-
+```
 
 Navigate to the project directory:
 cd Thesis-Tessel-Kaal
