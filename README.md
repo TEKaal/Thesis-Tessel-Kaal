@@ -3,9 +3,11 @@
 This thesis explores the integrating of various renewable energy sources into microgrids. The study seeks to minimize the burden on the main grid and minimize costs. Additionally, location-based optimization through hierarchical clustering is showcased in order to set the stage for further advancements in this framework to expand the complexity of the state spaces, and to minimize transmission losses further. The posed research question(s) are as follows: 
 RQ. How can Distributed Energy Resources be deployed and managed within an electrified microgrid to achieve a balance between energy consumption and production in order to minimize the burden on the central grid given fluctuating demand?
 To effectively address the main research question, it's divided into several sub-questions. This division allows for a targeted and in-depth exploration of each component of the main issue. The sub-questions are as follows:
-SRQ1. Which modeling aspects need to be considered when designing a microgrid and its energy management system, and how are these reflected in the existing literature?
-SRQ2. How can reinforcement learning be utilized to effectively place and manage all identified modeling aspects in a microgrid while maintaining grid stability and reliability?
-SRQ3. How can the location-based optimization of a microgrid be effectively visualized to ensure it creates value for all stakeholders?
+1. [SRQ1. Which modeling aspects need to be considered when designing a microgrid and its energy management system, and how are these reflected in the existing literature?](#SRQ1)
+2. [SRQ2. How can reinforcement learning be utilized to effectively place and manage all identified modeling aspects in a microgrid while maintaining grid stability and reliability?](#SRQ2)
+3. [SRQ3. How can the location-based optimization of a microgrid be effectively visualized to ensure it creates value for all stakeholders?](#SRQ3)
+
+
 
 The repository includes scripts for data collection, data processing, analysis, and visualization to draw conclusions about microgrid optimization utililzing a DQN. 
 
