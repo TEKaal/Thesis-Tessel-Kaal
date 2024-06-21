@@ -11,22 +11,27 @@ The repository includes scripts for data collection, data processing, analysis, 
 
 # Installation
 Clone the repository to your local machine:
-
 ```bash
 git clone https://github.com/TEKaal/Thesis-Tessel-Kaal.git
 ```
 
 Navigate to the project directory:
+```bash
 cd Thesis-Tessel-Kaal
+```
 
 Install the required dependencies using the provided requirements.txt file:
+```bash
 pip install -r requirements.txt
+```
 
 #Usage
 Detailed explanations for each script and module are provided within the respective files. 
 
 Change the input and output paths, and use the flags to pass the correct parameters. Run the main script that orchestrates the entire process, use:
+```bash
 python ./main.py
+```
 
 This script will train and evaluate the agent and output a training curve and evaluation graph, as well as all the data in CSVs. 
 
