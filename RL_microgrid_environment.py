@@ -3,8 +3,17 @@ from RL_read_energy_data import *
 from RL_read_solar_data import *
 from RL_read_wind_data import *
 from RL_read_grid_costs import *
+from RL_evbattery_module import EVBatteryModule
 
-timesteps = 35040
+file_path = r"C:\Users\tessel.kaal\OneDrive - Accenture\Thesis_v18may\RL_availability.csv"
+
+# Load the CSV file into a pandas DataFrame
+availability = pd.read_csv(file_path)
+
+# Convert the DataFrame column to a list (array)
+availability_array = availability.iloc[:, 0].tolist()
+
+steps = 35040
 
 import random
 import numpy as np
@@ -47,7 +56,7 @@ def calculate_wind_power(wind_speeds, radius, power_coefficient, air_density=1.2
 
     return power_kilowattshour
 
-def adjust_load_profile(load_profile, timesteps, factor=0.8):
+def adjust_load_profile(load_profile, steps, factor=0.8):
     # Convert load profile to a NumPy array if it's not already one
     if not isinstance(load_profile, np.ndarray):
         load_profile = np.array(load_profile)
@@ -57,13 +66,13 @@ def adjust_load_profile(load_profile, timesteps, factor=0.8):
 
     length = len(scaled_profile)
 
-    if length > timesteps:
+    if length > steps:
         # Keep only the last 'timesteps' values (considering warm up period)
-        adjusted_profile = scaled_profile[-timesteps:]
-    elif length < timesteps:
+        adjusted_profile = scaled_profile[-steps:]
+    elif length < steps:
         # Extend the load profile if it's shorter than required
         # This example pads with the last value, but other strategies can be used
-        padding = [scaled_profile[-1]] * (timesteps - length)
+        padding = [scaled_profile[-1]] * (steps - length)
         adjusted_profile = np.concatenate((scaled_profile, padding))
     else:
         # If the load profile already matches the timesteps, use it as is
@@ -71,7 +80,7 @@ def adjust_load_profile(load_profile, timesteps, factor=0.8):
 
     return adjusted_profile
 
-def create_microgrid(Energy_consumption, combined_df, df_buildings, steps=35040):
+def create_microgrid(Energy_consumption, combined_df, df_buildings):
     load_modules = {}
     plot = []
     RES = []
@@ -85,7 +94,7 @@ def create_microgrid(Energy_consumption, combined_df, df_buildings, steps=35040)
         processed_profile = adjust_load_profile(load_profile, steps)
         load_module = LoadModule(time_series=adjust_load_profile(load_profile, steps))
         plot.append(processed_profile[(steps // 52 )* 2 :(steps // 52 )* 3])
-        # # Set the forecaster separately if the LoadModule class requires it
+        # Set the forecaster separately if the LoadModule class requires it
         load_module.set_forecaster(forecaster="oracle",
                                    forecast_horizon=horizon,
                                    forecaster_increase_uncertainty=False,
@@ -98,14 +107,14 @@ def create_microgrid(Energy_consumption, combined_df, df_buildings, steps=35040)
     battery_df = combined_df[combined_df["Type"] == "Battery"]
 
     # Group by the characteristics that define 'sameness' and sum relevant columns
-    grouped_battery_df = battery_df.groupby(['Min_capaci', 'Max_capaci', 'Max_charge', 'Max_discha', 'Efficiency']).agg(
+    grouped_battery_df = battery_df.groupby(['Min_capaci', 'Max_capaci', 'Max_charge', 'Max_discha', 'Efficiency', 'Battery_co']).agg(
         {
-            'Min_capaci': 'first',  # We only need the first entry as all are the same in the group
-            'Max_capaci': 'first',
-            'Max_charge': 'sum',  # Summing charge capacities
-            'Max_discha': 'sum',  # Summing discharge capacities
-            'Efficiency': 'first',  # Efficiency should be the same for grouped items
-            'Battery_co': 'mean'  # Assuming you want the average cost cycle if they differ
+            'Min_capaci': 'sum',
+            'Max_capaci': 'sum',
+            'Max_charge': 'sum',
+            'Max_discha': 'sum',
+            'Efficiency': 'first',
+            'Battery_co': 'mean'
         }).reset_index(drop=True)
 
     # Initialize a dictionary to store battery modules
@@ -127,13 +136,47 @@ def create_microgrid(Energy_consumption, combined_df, df_buildings, steps=35040)
         # Store the battery module in the dictionary with its index as the key
         battery_modules[index] = battery_module
 
-    solar_data_array = solar_data(timesteps, steps)
+    # #filter out ev batteries
+    # EV_batteries = combined_df[combined_df['EV'] == 1]
+    # print(EV_batteries)
+    # EV_battery_modules = {}
+
+    # # Group by the characteristics that define 'sameness' and sum relevant columns
+    # grouped_EVbattery_df = EV_batteries.groupby(
+    #     ['Min_capaci', 'Max_capaci', 'Max_charge', 'Max_discha', 'Efficiency', 'Battery_co']).agg(
+    #     {
+    #         'Min_capaci': 'sum',
+    #         'Max_capaci': 'sum',
+    #         'Max_charge': 'sum',
+    #         'Max_discha': 'sum',
+    #         'Efficiency': 'first',
+    #         'Battery_co': 'mean'
+    #     }).reset_index(drop=True)
+
+    # for index, row in grouped_EVbattery_df.iterrows():
+    #     # Create a BatteryModule instance for each aggregated group
+    #     EV_battery_module = EVBatteryModule(
+    #         min_capacity=row["Min_capaci"],
+    #         max_capacity=row["Max_capaci"],
+    #         max_charge=row["Max_charge"],
+    #         max_discharge=row["Max_discha"],
+    #         efficiency=row["Efficiency"],
+    #         init_soc=random.uniform(0, 1),  # Initialize SOC randomly between 0 and 1
+    #         battery_cost_cycle=row["Battery_co"],
+    #         time_series=availability_array
+    #     )
+    #
+    #     EV_battery_module[index] = EV_battery_module
+
+    solar_data_array = solar_data(steps)
+
     # Convert the column to numeric, coercing errors to NaN
     df_buildings["TNO_dakopp_m2"] = pd.to_numeric(df_buildings["TNO_dakopp_m2"], errors='coerce')
     roof_partition = df_buildings["TNO_dakopp_m2"].sum() * 0.6
     # Print the calculated sum
     print("Horizontal roof partition calculated:", roof_partition)
     # problem is not all buildings have this
+
     efficiency_pv = 0.9
     solar_energy = roof_partition * solar_data_array * efficiency_pv
 
@@ -153,7 +196,7 @@ def create_microgrid(Energy_consumption, combined_df, df_buildings, steps=35040)
     # Iterate through the filtered DataFrame
     for index, row in windturbine_df.iterrows():
         # If wind data varies for each turbine, call here; otherwise, call outside the loop as shown
-        wind_speed_array = wind_data(timesteps, steps)
+        wind_speed_array = wind_data(steps)
         wind_data_array = calculate_wind_power(wind_speed_array, row["Radius_WT"], row["Power_coef"])
 
         # Create a RenewableModule instance for each turbine
@@ -188,10 +231,14 @@ def create_microgrid(Energy_consumption, combined_df, df_buildings, steps=35040)
     for index, row in df_buildings.iterrows():
         # Directly access the column value in the row, which is now guaranteed not to be NaN
         amount_squaremeters = row['TNO_grond_opp_m2']
+        print(amount_squaremeters)
         residential_homes = row['BAG_aantal_verblijfsobjecten']
 
         # Do something with amount_squaremeters if needed
         print(amount_squaremeters)
+        print(type(amount_squaremeters))
+        print(Epot)
+        print(type(Epot))
 
         # Calculate base electrical load for current row
         base_electrical_load_gjoule = Epot * amount_squaremeters
@@ -241,12 +288,11 @@ def create_microgrid(Energy_consumption, combined_df, df_buildings, steps=35040)
     print("Max Export:", max_export)
     print("CO2 Price:", co2_price)
 
-    import_array = interpolate_import_costs(timesteps, steps)
-
+    import_array = interpolate_import_costs(steps)
     RES.append(import_array[(steps // 52 )* 2 :(steps // 52 )* 3])
     # export_array = interpolate_export_costs(timesteps) # https://www.zonnepanelen-info.nl/blog/stappenplan-stroom-terugleveren-aan-het-net/ per kwh
 
-    #import, export, Co2
+    # import, export, Co2
     grid_ts = [0.2,0.1,co2_price] * np.ones((steps, 3))
     grid_ts[:, 0] = import_array
     grid_ts[:, 1] = import_array # just

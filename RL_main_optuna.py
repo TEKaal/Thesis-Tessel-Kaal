@@ -111,14 +111,15 @@ def main(args):
     df_ders, coordinates_ders, ids_ders, type_der = load_DERs_from_file(args.scenario_file, ids_buildings)
     combined_df = concatenate_and_combine_columns(df_buildings, df_ders)
 
+
     # Load all the energy data
     Energy_consumption = process_energy_consumption_files(args.folder_path_loads, list(ids_buildings), time_interval)
-    microgrid = create_microgrid(Energy_consumption, combined_df, df_buildings)
+    microgrid_training = create_microgrid(Energy_consumption, combined_df, df_buildings)
     print("Microgrid is created, now wrap in gym environment")
-    print(microgrid)
+    print(microgrid_training)
 
     #Wrap microgrid
-    microgrid_env = CustomMicrogridEnv.from_microgrid(microgrid)
+    microgrid_env = CustomMicrogridEnv.from_microgrid(microgrid_training)
 
     # microgrid_env = CustomMicrogridEnv.from_scenario(microgrid_number=10)
     microgrid_env.trajectory_func = FixedLengthStochasticTrajectory(args.nr_steps)
@@ -129,17 +130,18 @@ def main(args):
     microgrid_env.initial_step = 0
     microgrid_env.final_step = 26280
 
-    trained_agent_DQN = train_dqn_agent(microgrid_env, run_folder, args.dqn_episodes, args.nr_steps, args.dqn_batch_size, args.learning_rate, args.memory_size,  args.num_layers, args.layers_size, args.epsilon_d, args.gamma)
-
+    # trained_agent_DQN = train_dqn_agent(microgrid_env, run_folder, args.dqn_episodes, args.nr_steps, args.dqn_batch_size, args.learning_rate, args.memory_size,  args.num_layers, args.layers_size, args.epsilon_d, args.gamma)
+    #
     # print('TRAINING DQL DONE')
 
-    microgrid_env = CustomMicrogridEnv.from_microgrid(microgrid_env)
-    microgrid_env.trajectory_func = FixedLengthStochasticTrajectory(args.nr_steps)
+    # microgrid_evaluation = create_microgrid(Energy_consumption, combined_df, df_buildings, 90, 1, 3)
+    # microgrid_env_evaluation = CustomMicrogridEnv.from_microgrid(microgrid_evaluation)
+    # microgrid_env_evaluation.trajectory_func = FixedLengthStochasticTrajectory(args.nr_steps)
 
-    microgrid_env.initial_step = 26280
-    microgrid_env.final_step = 35040
-
-    evaluate_dqn_agent(microgrid_env, run_folder, trained_agent_DQN, args.dqn_evaluation_steps, args.nr_steps)
+    # microgrid_env.initial_step = 26280
+    # microgrid_env.final_step = 35040
+    #
+    # evaluate_dqn_agent(microgrid_env, run_folder, trained_agent_DQN, args.dqn_evaluation_steps, args.nr_steps)
 
     return microgrid_env
 
@@ -158,15 +160,15 @@ if __name__ == "__main__":
     parser.add_argument('--scenario_file', type=str, default=scenario_file, help='Path to the scenario file.')
     parser.add_argument('--nr_steps', type=int, default=96, help='Number of steps for the simulation.')
     parser.add_argument('--time_interval', type=int, default=15, help='Time interval in minutes.')
-    parser.add_argument('--dqn_episodes', type=int, default=400, help='Number of episodes for DQN training.')
+    parser.add_argument('--dqn_episodes', type=int, default=100, help='Number of episodes for DQN training.')
     parser.add_argument('--dqn_batch_size', type=int, default=64, help='Batch size for DQN training.')
-    parser.add_argument('--dqn_evaluation_steps', type=int, default=200, help='Number of evaluation steps for DQN.')
-    parser.add_argument('--learning_rate', type=float, default=0.0000201605258096069, help='Learning rate for DQN.')
+    parser.add_argument('--dqn_evaluation_steps', type=int, default=40, help='Number of evaluation steps for DQN.')
+    parser.add_argument('--learning_rate', type=float, default=0.0001, help='Learning rate for DQN.')
     parser.add_argument('--memory_size', type=int, default=96*4, help='Memory allocation.')
     parser.add_argument('--num_layers', type=int, default=4, help='Neural network')
     parser.add_argument('--layers_size', type=int, default=64, help='Neural layer size')
-    parser.add_argument('--epsilon_d', type=float, default=0.929251846973606, help='Memory allocation.')
-    parser.add_argument('--gamma', type=float, default=0.9281892353169647, help='Memory allocation.')
+    parser.add_argument('--epsilon_d', type=float, default=0.999, help='Memory allocation.')
+    parser.add_argument('--gamma', type=float, default=1, help='Memory allocation.')
     parser.add_argument('--n_trials', type=int, default=100, help='Number of trials for Optuna optimization.')
 
     args = parser.parse_args()
@@ -174,25 +176,25 @@ if __name__ == "__main__":
     # Initialize the environment in the main function
     microgrid_env = main(args)
 
-    # Use Optuna to find the best hyperparameters
-    # study = optuna.create_study(direction='maximize')
-    #
-    # # Pass the environment and other static parameters to the study
-    # study.set_user_attr('microgrid_env', microgrid_env)
-    # study.set_user_attr('nr_steps', args.nr_steps)
-    # study.set_user_attr('dqn_episodes', args.dqn_episodes)
-    # study.set_user_attr('dqn_evaluation_steps', args.dqn_evaluation_steps)
-    # study.set_user_attr('memory_size', args.memory_size)
-    # study.set_user_attr('num_layers', args.num_layers)
-    # study.set_user_attr('layers_size', args.layers_size)
-    # study.set_user_attr('dqn_batch_size', args.dqn_batch_size)
-    #
-    # study.optimize(objective, n_trials=args.n_trials)
-    #
-    # # Print the best hyperparameters found
-    # print("Best hyperparameters:", study.best_params)
-    # print("Best value:", study.best_value)
-    #
-    # vis.plot_optimization_history(study)
-    # vis.plot_param_importances(study)
-    # vis.plot_slice(study)
+    Use Optuna to find the best hyperparameters
+    study = optuna.create_study(direction='maximize')
+
+    # Pass the environment and other static parameters to the study
+    study.set_user_attr('microgrid_env', microgrid_env)
+    study.set_user_attr('nr_steps', args.nr_steps)
+    study.set_user_attr('dqn_episodes', args.dqn_episodes)
+    study.set_user_attr('dqn_evaluation_steps', args.dqn_evaluation_steps)
+    study.set_user_attr('memory_size', args.memory_size)
+    study.set_user_attr('num_layers', args.num_layers)
+    study.set_user_attr('layers_size', args.layers_size)
+    study.set_user_attr('dqn_batch_size', args.dqn_batch_size)
+
+    study.optimize(objective, n_trials=args.n_trials)
+
+    # Print the best hyperparameters found
+    print("Best hyperparameters:", study.best_params)
+    print("Best value:", study.best_value)
+
+    vis.plot_optimization_history(study)
+    vis.plot_param_importances(study)
+    vis.plot_slice(study)

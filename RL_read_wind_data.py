@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 
-def wind_data(timesteps, steps):
+def wind_data(steps):
     file_path = 'Wind power/Wind-KNMI'
     # Load the data using regex to handle multiple spaces and correctly interpret columns
     df = pd.read_csv(file_path, sep='\s{2,}', parse_dates=['DTG'], engine='python')

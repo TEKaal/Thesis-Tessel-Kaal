@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-def interpolate_import_costs(timesteps, steps):
+def interpolate_import_costs(steps):
     file_path = r'C:\Users\tessel.kaal\Documents\GitHub\Thesis\Grid\importcosts_grid_filtered.csv'  # Update with the actual path to your file
 
     # Load the data
