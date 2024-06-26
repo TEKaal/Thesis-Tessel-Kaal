@@ -5,14 +5,6 @@ from RL_read_wind_data import *
 from RL_read_grid_costs import *
 from RL_evbattery_module import EVBatteryModule
 
-file_path = r"C:\Users\tessel.kaal\OneDrive - Accenture\Thesis_v18may\RL_availability.csv"
-
-# Load the CSV file into a pandas DataFrame
-availability = pd.read_csv(file_path)
-
-# Convert the DataFrame column to a list (array)
-availability_array = availability.iloc[:, 0].tolist()
-
 steps = 35040
 
 import random
@@ -56,7 +48,7 @@ def calculate_wind_power(wind_speeds, radius, power_coefficient, air_density=1.2
 
     return power_kilowattshour
 
-def adjust_load_profile(load_profile, steps, factor=0.8):
+def adjust_load_profile(load_profile, steps, factor=1):
     # Convert load profile to a NumPy array if it's not already one
     if not isinstance(load_profile, np.ndarray):
         load_profile = np.array(load_profile)
@@ -103,18 +95,53 @@ def create_microgrid(Energy_consumption, combined_df, df_buildings):
         load_modules[f'load_{house_id}'] = load_module
         print("this is the length of the load module", len(load_module))
 
-    # Filter out the rows where the Type is "Battery"
-    battery_df = combined_df[combined_df["Type"] == "Battery"]
+    # Filter out the rows where the Type is "EVBattery"
+    # Evs first so that it is battery 1
+    EV_battery_df = combined_df[combined_df["Type"] == "EVBattery"]
 
     # Group by the characteristics that define 'sameness' and sum relevant columns
-    grouped_battery_df = battery_df.groupby(['Min_capaci', 'Max_capaci', 'Max_charge', 'Max_discha', 'Efficiency', 'Battery_co']).agg(
+    grouped_EV_battery_df = EV_battery_df.groupby(
+        ['Min_capaci', 'Max_capaci', 'Max_charge', 'Max_discha', 'Efficiency', 'Battery_co']).agg(
         {
             'Min_capaci': 'sum',
             'Max_capaci': 'sum',
             'Max_charge': 'sum',
             'Max_discha': 'sum',
             'Efficiency': 'first',
-            'Battery_co': 'mean'
+            'Battery_co': 'sum'
+        }).reset_index(drop=True)
+
+    # Initialize a dictionary to store battery modules
+    EV_battery_modules = {}
+
+    # Iterate over the grouped DataFrame
+    for index, row in grouped_EV_battery_df.iterrows():
+        # Create a BatteryModule instance for each aggregated group
+        EV_battery_module = BatteryModule(
+            min_capacity=row["Min_capaci"],
+            max_capacity=row["Max_capaci"],
+            max_charge=row["Max_charge"],
+            max_discharge=row["Max_discha"],
+            efficiency=row["Efficiency"],
+            init_soc=random.uniform(0, 1),  # Initialize SOC randomly between 0 and 1
+            battery_cost_cycle=row["Battery_co"]
+        )
+
+        # Store the battery module in the dictionary with its index as the key
+        EV_battery_modules[index] = EV_battery_module
+
+    # Filter out the rows where the Type is "Battery"
+    battery_df = combined_df[combined_df["Type"] == "Battery"]
+
+    # Group by the characteristics that define 'sameness' and sum relevant columns
+    grouped_battery_df = battery_df.groupby(['Min_capaci', 'Max_capaci', 'Max_charge', 'Max_discha', 'Efficiency', 'Battery_co']).agg(
+        {
+            'Min_capaci': 'first',
+            'Max_capaci': 'first',
+            'Max_charge': 'sum',
+            'Max_discha': 'sum',
+            'Efficiency': 'first',
+            'Battery_co': 'sum'
         }).reset_index(drop=True)
 
     # Initialize a dictionary to store battery modules
@@ -135,38 +162,6 @@ def create_microgrid(Energy_consumption, combined_df, df_buildings):
 
         # Store the battery module in the dictionary with its index as the key
         battery_modules[index] = battery_module
-
-    # #filter out ev batteries
-    # EV_batteries = combined_df[combined_df['EV'] == 1]
-    # print(EV_batteries)
-    # EV_battery_modules = {}
-
-    # # Group by the characteristics that define 'sameness' and sum relevant columns
-    # grouped_EVbattery_df = EV_batteries.groupby(
-    #     ['Min_capaci', 'Max_capaci', 'Max_charge', 'Max_discha', 'Efficiency', 'Battery_co']).agg(
-    #     {
-    #         'Min_capaci': 'sum',
-    #         'Max_capaci': 'sum',
-    #         'Max_charge': 'sum',
-    #         'Max_discha': 'sum',
-    #         'Efficiency': 'first',
-    #         'Battery_co': 'mean'
-    #     }).reset_index(drop=True)
-
-    # for index, row in grouped_EVbattery_df.iterrows():
-    #     # Create a BatteryModule instance for each aggregated group
-    #     EV_battery_module = EVBatteryModule(
-    #         min_capacity=row["Min_capaci"],
-    #         max_capacity=row["Max_capaci"],
-    #         max_charge=row["Max_charge"],
-    #         max_discharge=row["Max_discha"],
-    #         efficiency=row["Efficiency"],
-    #         init_soc=random.uniform(0, 1),  # Initialize SOC randomly between 0 and 1
-    #         battery_cost_cycle=row["Battery_co"],
-    #         time_series=availability_array
-    #     )
-    #
-    #     EV_battery_module[index] = EV_battery_module
 
     solar_data_array = solar_data(steps)
 
@@ -217,28 +212,18 @@ def create_microgrid(Energy_consumption, combined_df, df_buildings):
 
     # Ensure that Epot and heat_pump_cop are defined
     Epot = grid_info['Geo_potent']
-    print(Epot)# Example value, define as per actual data or requirements
-    heat_pump_cop = 4.5  # Example coefficient of performance
+    heat_pump_cop = 4.5
 
     # Initialize total variables
     total_base_electrical_load = 0
     total_energy_output = 0
-
-    # If `combined_df` is the DataFrame and you want to fill NaNs for the column 'TNO_grond_opp_m2'
     df_buildings['TNO_grond_opp_m2'].fillna(0, inplace=True)
 
-    # Iterating over DataFrame rows properly
     for index, row in df_buildings.iterrows():
         # Directly access the column value in the row, which is now guaranteed not to be NaN
         amount_squaremeters = row['TNO_grond_opp_m2']
         print(amount_squaremeters)
         residential_homes = row['BAG_aantal_verblijfsobjecten']
-
-        # Do something with amount_squaremeters if needed
-        print(amount_squaremeters)
-        print(type(amount_squaremeters))
-        print(Epot)
-        print(type(Epot))
 
         # Calculate base electrical load for current row
         base_electrical_load_gjoule = Epot * amount_squaremeters
@@ -290,7 +275,6 @@ def create_microgrid(Energy_consumption, combined_df, df_buildings):
 
     import_array = interpolate_import_costs(steps)
     RES.append(import_array[(steps // 52 )* 2 :(steps // 52 )* 3])
-    # export_array = interpolate_export_costs(timesteps) # https://www.zonnepanelen-info.nl/blog/stappenplan-stroom-terugleveren-aan-het-net/ per kwh
 
     # import, export, Co2
     grid_ts = [0.2,0.1,co2_price] * np.ones((steps, 3))
@@ -314,7 +298,7 @@ def create_microgrid(Energy_consumption, combined_df, df_buildings):
                ]
 
     combined_modules = (modules + list(load_modules.values()) + list(battery_modules.values())
-                        + list(wind_modules.values()))
+                        + list(EV_battery_modules.values()) + list(wind_modules.values()))
     microgrid = Microgrid(combined_modules)
 
     # print all input data
@@ -353,7 +337,6 @@ def create_microgrid(Energy_consumption, combined_df, df_buildings):
     # Show the plot
     # plt.show()
     return microgrid
-
 
 
 

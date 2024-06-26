@@ -31,18 +31,6 @@ class DQNAgent:
         self.total_steps = 0
 
 
-        # def _build_model(self):
-    #     """Builds a deeper neural network for the DQN agent."""
-    #     model = Sequential()
-    #     model.add(Input(shape=(self.state_size,)))
-    #     model.add(Dense(128, activation='relu'))
-    #     model.add(Dense(128, activation='relu'))
-    #     model.add(Dense(64, activation='relu'))
-    #     model.add(Dense(64, activation='relu'))
-    #     model.add(Dense(self.action_size, activation='linear'))
-    #     model.compile(loss='mse', optimizer=Adam(learning_rate=self.learning_rate))
-    #     return model
-
     def _build_model(self):
         model = Sequential()
         model.add(Input(shape=(self.state_size,)))
@@ -103,7 +91,7 @@ class DQNAgent:
 
 
 def train_dqn_agent(env, outputfolder, episodes, nr_steps, batch_size, learning_rate, memory_size, num_layers,
-                    layer_size, epsilon_decay, gamma):
+                    layer_size, epsilon_decay, gamma, trial='1', pre_trained_agent=None, env_schedule=None):
     print("Start to train the agent")
     state_size = env.observation_space.shape[0]
     action_size = env.action_space.n
@@ -122,6 +110,11 @@ def train_dqn_agent(env, outputfolder, episodes, nr_steps, batch_size, learning_
         counter = 0
 
         while (counter < nr_steps):
+            # if env_schedule[counter % 96] == 0:
+            #     env.modules.battery[1].soc = 0
+            # if counter % 96 == 72:
+            #     env.modules.battery[1].soc = np.random.uniform(0.2, 0.5)
+
             action = agent.act(state)
             next_state, reward, done, _ = env.step(action)
             next_state = np.reshape(next_state, [1, state_size])
@@ -165,7 +158,7 @@ def train_dqn_agent(env, outputfolder, episodes, nr_steps, batch_size, learning_
 
     return agent
 
-def evaluate_dqn_agent(env, outputfolder, agent, episodes, nr_steps):
+def evaluate_dqn_agent(env, outputfolder, agent, episodes, nr_steps, trial='1', env_schedule=None):
     episode_rewards_list = []
     total_rewards = 0
     current_datetime = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -179,6 +172,11 @@ def evaluate_dqn_agent(env, outputfolder, agent, episodes, nr_steps):
         actions = []  # Reset actions list for each new episode
 
         while (counter < nr_steps):
+            # if env_schedule[counter % 96] == 0:
+            #     env.modules.battery[1].soc = 0
+            # if counter % 96 == 72:
+            #     env.modules.battery[1].soc = np.random.uniform(0.2, 0.5)
+
             action = np.argmax(agent.model.predict(state)[0])
             actions.append(action)
             next_state, reward, done, _ = env.step(action)
@@ -192,12 +190,12 @@ def evaluate_dqn_agent(env, outputfolder, agent, episodes, nr_steps):
         total_rewards += episode_rewards
 
         # Save actions to CSV for each episode
-        with open(os.path.join(outputfolder, f"actions_{current_datetime}_episode_{e+1}.csv"), 'w', newline='') as file:
+        with open(os.path.join(outputfolder, f"actions_season{trial}_{current_datetime}_episode_{e+1}.csv"), 'w', newline='') as file:
             writer = csv.writer(file)
             writer.writerow(['Step', 'Action'])
             writer.writerows([[i + 1, act] for i, act in enumerate(actions)])
 
-    with open((outputfolder + f"\\output_rewards_evaluation_{current_datetime}.csv"), 'w', newline='') as file:
+    with open((outputfolder + f"/output_rewards_evaluation_season{trial}_{current_datetime}.csv"), 'w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(['Episode', 'Reward'])
         writer.writerows([[i + 1, r] for i, r in enumerate(episode_rewards_list)])
@@ -211,7 +209,7 @@ def evaluate_dqn_agent(env, outputfolder, agent, episodes, nr_steps):
     plt.ylabel('Reward')
     plt.title('Reward per Episode Evaluation')
     plt.grid(True)
-    plt.savefig(os.path.join(outputfolder, f"plot_evaluation_rewards_{current_datetime}.png"))
+    plt.savefig(os.path.join(outputfolder, f"plot_evaluation_rewards_season{trial}_{current_datetime}.png"))
     plt.close()
 
     return average_reward, episode_rewards_list
