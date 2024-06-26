@@ -60,7 +60,7 @@ def main(args):
     microgrid_env.trajectory_func = FixedLengthStochasticTrajectory(args.nr_steps)
 
     #Take in EVs
-    env_schedule = [1] * 28 + [0] * 44 + [1] * 24  # 7 hours of env1, 11 hours of env2, 6 hours of env1
+    env_schedule = [1] * 28 + [0] * 44 + [1] * 24  # 7 hours of EV capacity, 11 hours of capacity 0, 6 hours of EV capacity
 
     print("Initialising trajectory")
 

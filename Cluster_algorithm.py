@@ -15,7 +15,6 @@ def hierarchical_clustering(distance_matrix, max_d, max_nodes):
     Returns:
     - clusters: A list of clusters that respects the maximum number of nodes.
     """
-
     # Perform hierarchical clustering using the distance matrix
     Z = linkage(distance_matrix, method='ward')
 

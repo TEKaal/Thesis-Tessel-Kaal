@@ -48,7 +48,7 @@ def calculate_wind_power(wind_speeds, radius, power_coefficient, air_density=1.2
 
     return power_kilowattshour
 
-def adjust_load_profile(load_profile, steps, factor=1):
+def adjust_load_profile(load_profile, steps, factor):
     # Convert load profile to a NumPy array if it's not already one
     if not isinstance(load_profile, np.ndarray):
         load_profile = np.array(load_profile)
@@ -72,7 +72,7 @@ def adjust_load_profile(load_profile, steps, factor=1):
 
     return adjusted_profile
 
-def create_microgrid(Energy_consumption, combined_df, df_buildings):
+def create_microgrid(Energy_consumption, combined_df, df_buildings, solar_factor=50, wind_factor=50, heatpump_factor=50, load_factor=0.8):
     load_modules = {}
     plot = []
     RES = []
@@ -83,8 +83,8 @@ def create_microgrid(Energy_consumption, combined_df, df_buildings):
 
     for house_id, load_profile in Energy_consumption.items():
         # Create the load module
-        processed_profile = adjust_load_profile(load_profile, steps)
-        load_module = LoadModule(time_series=adjust_load_profile(load_profile, steps))
+        processed_profile = adjust_load_profile(load_profile, steps, load_factor)
+        load_module = LoadModule(time_series=adjust_load_profile(load_profile, steps, load_factor))
         plot.append(processed_profile[(steps // 52 )* 2 :(steps // 52 )* 3])
         # Set the forecaster separately if the LoadModule class requires it
         load_module.set_forecaster(forecaster="oracle",
@@ -177,7 +177,7 @@ def create_microgrid(Energy_consumption, combined_df, df_buildings):
 
     RES.append((solar_energy[(steps // 52 )* 2 :(steps // 52 )* 3]))
 
-    solar_energy = RenewableModule(time_series=(50*solar_energy))
+    solar_energy = RenewableModule(time_series=(solar_factor*solar_energy))
     solar_energy.set_forecaster(forecaster="oracle",
                                              forecast_horizon=horizon,
                                              forecaster_increase_uncertainty=False,
@@ -195,7 +195,7 @@ def create_microgrid(Energy_consumption, combined_df, df_buildings):
         wind_data_array = calculate_wind_power(wind_speed_array, row["Radius_WT"], row["Power_coef"])
 
         # Create a RenewableModule instance for each turbine
-        wind_module = RenewableModule(time_series=(50*wind_data_array))
+        wind_module = RenewableModule(time_series=(wind_factor*wind_data_array))
 
         # Configure the forecaster settings for the module
         wind_module.set_forecaster(
@@ -255,7 +255,7 @@ def create_microgrid(Energy_consumption, combined_df, df_buildings):
     # Create a single GensetModule instance with the total calculated values
     total_heat_pump = GensetModule(
         running_min_production=0,  # Assuming no minimum production specified
-        running_max_production=(total_energy_output*0.8)*1.5, #effiency,
+        running_max_production=(total_energy_output*0.8)*heatpump_factor, #effiency,
         genset_cost=0.5,  #standard is 0.4 divided by 4
         co2_per_unit=0.0,
         cost_per_unit_co2=0.0,
